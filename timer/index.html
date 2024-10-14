@@ -75,6 +75,7 @@
             const timerNameId = `timerName${timerCount}`;
             const timeDiffId = `timeDiff${timerCount}`;
             const targetTimeId = `targetTime${timerCount}`;
+            const quarterTimeId = `quarterTime${timerCount}`;
 
             // HTML structure for each timer
             const timerHTML = `
@@ -83,6 +84,7 @@
                     <button class="delete-button" onclick="deleteTimer('${timerId}')">Delete</button>
                     <div class="time-display">Timer: <span id="${countdownId}">00:00</span></div>
                     <div class="time-display">Target: <span id="${targetTimeId}">--:--</span> <span id="${timeDiffId}"></span></div>
+                    <div class="time-display">25%: <span id="${quarterTimeId}">--:--</span></div>
                     <div>
                         <button class="time-button" onclick="adjustTargetTime(${timerCount}, 60)">+60s</button>
                         <button class="time-button" onclick="adjustTargetTime(${timerCount}, -60)">-60s</button>
@@ -125,6 +127,7 @@
             if (!timer.targetTime || document.getElementById(`targetTime${timerNumber}`).textContent === '--:--') {
                 document.getElementById(`countdown${timerNumber}`).textContent = '--:--';
                 document.getElementById(`targetTime${timerNumber}`).textContent = '--:--';
+                document.getElementById(`quarterTime${timerNumber}`).textContent = '--:--';
                 return;
             }
 
@@ -136,6 +139,7 @@
                 // Reset both the Timer and Target to --:--
                 document.getElementById(`countdown${timerNumber}`).textContent = '--:--';
                 document.getElementById(`targetTime${timerNumber}`).textContent = '--:--';
+                document.getElementById(`quarterTime${timerNumber}`).textContent = '--:--';
                 timer.targetTime = null;
             } else {
                 // Continue updating the countdown if there's time remaining
@@ -150,6 +154,12 @@
             // Calculate and display time difference from fastest target if valid
             const timeDiff = calculateTimeDifference(timerNumber);
             document.getElementById(`timeDiff${timerNumber}`).textContent = timeDiff ? `${timeDiff >= 0 ? '+' : ''}${timeDiff}s` : '';
+
+            // Calculate and display the 25% time based on the fastest target
+            const quarterTime = calculateQuarterTime(timerNumber);
+            if (quarterTime) {
+                document.getElementById(`quarterTime${timerNumber}`).textContent = quarterTime;
+            }
 
             checkFastestTimer();
         }
@@ -186,6 +196,24 @@
             // Calculate the time difference in seconds between this timer's target and the fastest target
             const timeDiff = Math.floor((timer.targetTime - fastestTimer.targetTime) / 1000);
             return timeDiff;
+        }
+
+        function calculateQuarterTime(timerNumber) {
+            const timeDiff = calculateTimeDifference(timerNumber);
+            if (timeDiff === null || timeDiff === 0) {
+                return null;
+            }
+
+            // Calculate the 25% time (time difference + 1 second, then multiplied by 4)
+            const quarterSeconds = (timeDiff + 1) * 4;
+
+            const quarterMinutes = Math.floor(quarterSeconds / 60);
+            const quarterRemainingSeconds = quarterSeconds % 60;
+
+            const displayMinutes = String(quarterMinutes).padStart(2, '0');
+            const displaySeconds = String(quarterRemainingSeconds).padStart(2, '0');
+
+            return `${displayMinutes}:${displaySeconds}`;
         }
 
         function checkFastestTimer() {
