@@ -67,6 +67,7 @@
     <script>
         let timerCount = 0;
         let timers = {};
+        let fastestTimer = null;
 
         function addTimer() {
             timerCount++;
@@ -123,11 +124,7 @@
             const timer = timers[timerNumber];
             const now = new Date();
 
-            // If the target is not set (displayed as --:--), display Timer as --:-- and skip further processing
-            if (!timer.targetTime || document.getElementById(`targetTime${timerNumber}`).textContent === '--:--') {
-                document.getElementById(`countdown${timerNumber}`).textContent = '--:--';
-                document.getElementById(`targetTime${timerNumber}`).textContent = '--:--';
-                document.getElementById(`quarterTime${timerNumber}`).textContent = '--:--';
+            if (!timer.targetTime) {
                 return;
             }
 
@@ -160,15 +157,13 @@
             if (quarterTime) {
                 document.getElementById(`quarterTime${timerNumber}`).textContent = quarterTime;
             }
-
-            checkFastestTimer();
         }
 
         function adjustTargetTime(timerNumber, secondChange) {
             const timer = timers[timerNumber];
 
             // If targetTime is not set, use the current time
-            if (!timer.targetTime || document.getElementById(`targetTime${timerNumber}`).textContent === '--:--') {
+            if (!timer.targetTime) {
                 timer.targetTime = new Date();
             }
 
@@ -187,7 +182,6 @@
 
         function calculateTimeDifference(timerNumber) {
             const timer = timers[timerNumber];
-            const fastestTimer = timers.fastest;
 
             if (!timer.targetTime || !fastestTimer?.targetTime) {
                 return null;
@@ -218,19 +212,19 @@
 
         function checkFastestTimer() {
             let fastest = null;
-            let fastestTimer = null;
+            let fastestTimerNum = null;
             let allTimersInactive = true;
+            const now = new Date();
 
             // Find the next fastest timer that hasn't reached zero and check if all timers are inactive
             for (const timerNumber in timers) {
                 const timer = timers[timerNumber];
-                const now = new Date();
                 // Check if the timer hasn't reached zero yet
                 if (timer.targetTime && timer.targetTime > now) {
                     allTimersInactive = false; // At least one active timer exists
                     if (!fastest || timer.targetTime < fastest) {
                         fastest = timer.targetTime;
-                        fastestTimer = timerNumber;
+                        fastestTimerNum = timerNumber;
                     }
                 }
             }
@@ -239,12 +233,12 @@
                 // If all timers are inactive, reset Fastest and Target to --:--
                 document.getElementById('fastest-timer').textContent = '--:--';
                 document.getElementById('fastest-target-time').textContent = '--:--';
-                delete timers.fastest;
-            } else if (fastestTimer !== null) {
+                fastestTimer = null;
+            } else if (fastestTimerNum !== null) {
                 // Update "Fastest" and "Target" with the new fastest timer
-                timers.fastest = timers[fastestTimer];
+                fastestTimer = timers[fastestTimerNum];
                 const now = new Date();
-                const remainingTime = Math.floor((timers[fastestTimer].targetTime - now) / 1000);
+                const remainingTime = Math.floor((fastestTimer.targetTime - now) / 1000);
 
                 const remainingMinutes = Math.floor(remainingTime / 60);
                 const remainingSeconds = remainingTime % 60;
@@ -252,9 +246,9 @@
                 const displaySeconds = String(remainingSeconds).padStart(2, '0');
                 document.getElementById('fastest-timer').textContent = `${displayMinutes}:${displaySeconds}`;
 
-                const targetHours = String(timers[fastestTimer].targetTime.getHours()).padStart(2, '0');
-                const targetMinutes = String(timers[fastestTimer].targetTime.getMinutes()).padStart(2, '0');
-                const targetSeconds = String(timers[fastestTimer].targetTime.getSeconds()).padStart(2, '0');
+                const targetHours = String(fastestTimer.targetTime.getHours()).padStart(2, '0');
+                const targetMinutes = String(fastestTimer.targetTime.getMinutes()).padStart(2, '0');
+                const targetSeconds = String(fastestTimer.targetTime.getSeconds()).padStart(2, '0');
                 document.getElementById('fastest-target-time').textContent = `${targetHours}:${targetMinutes}:${targetSeconds}`;
             }
         }
@@ -271,18 +265,23 @@
             checkFastestTimer();
         }
 
+        function updateTimers() {
+            for (const timerNumber in timers) {
+                const timer = timers[timerNumber];
+                if (timer.targetTime) {
+                    updateDisplay(timerNumber);
+                }
+            }
+        }
+
         // Initial state: add one timer
         addTimer();
 
         // Update every second
         setInterval(function () {
-                for (const timerNumber in timers) {
-                    const timer = timers[timerNumber];
-                    if (timer.targetTime) {
-                        updateDisplay(timerNumber);
-                    }
-                }
-            }, 1000);
+            checkFastestTimer();
+            updateTimers();
+        }, 1000);
     </script>
 </body>
 </html>
