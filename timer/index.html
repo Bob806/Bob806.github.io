@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arrive Timer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            font-size: 1rem;
+            margin: 0;
+            padding: 0;
+            color: black;
+            font-weight: normal;
+        }
+
+        .timer-section {
+            display: inline-block;
+            width: 90%;
+            margin: 10px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            text-align: left;
+        }
+
+        .time-display {
+            margin: 5px 0;
+        }
+
+        .time-button {
+            font-size: 0.9rem;
+            padding: 5px;
+            margin: 3px;
+            width: 50px;
+        }
+
+        .delete-button {
+            font-size: 0.9rem;
+            padding: 3px 5px;
+            cursor: pointer;
+            float: right;
+        }
+
+        .add-timer-button {
+            font-size: 1rem;
+            padding: 10px;
+            margin-top: 20px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="fastest">
+        <div>Fastest: <span id="fastest-timer">--:--</span></div>
+        <div>Target: <span id="fastest-target-time">--:--</span></div>
+    </div>
+
+    <div id="timers-container">
+        <!-- Timers will be added here -->
+    </div>
+
+    <button class="add-timer-button" onclick="addTimer()">Add Timer</button>
+
+    <script>
+        let timerCount = 0;
+        let timers = {};
+
+        function addTimer() {
+            timerCount++;
+            const timerId = `timer${timerCount}`;
+            const countdownId = `countdown${timerCount}`;
+            const timerNameId = `timerName${timerCount}`;
+            const timeDiffId = `timeDiff${timerCount}`;
+            const targetTimeId = `targetTime${timerCount}`;
+
+            // HTML structure for each timer
+            const timerHTML = `
+                <div id="${timerId}" class="timer-section">
+                    <input type="text" id="${timerNameId}" value="Timer ${timerCount}" placeholder="Timer Name">
+                    <button class="delete-button" onclick="deleteTimer('${timerId}')">Delete</button>
+                    <div class="time-display">Timer: <span id="${countdownId}">00:00</span></div>
+                    <div class="time-display">Target: <span id="${targetTimeId}">--:--</span> <span id="${timeDiffId}"></span></div>
+                    <div>
+                        <button class="time-button" onclick="adjustTargetTime(${timerCount}, 60)">+60s</button>
+                        <button class="time-button" onclick="adjustTargetTime(${timerCount}, -60)">-60s</button>
+                    </div>
+                    <div>
+                        <button class="time-button" onclick="adjustTargetTime(${timerCount}, 10)">+10s</button>
+                        <button class="time-button" onclick="adjustTargetTime(${timerCount}, -10)">-10s</button>
+                    </div>
+                    <div>
+                        <button class="time-button" onclick="adjustTargetTime(${timerCount}, 1)">+1s</button>
+                        <button class="time-button" onclick="adjustTargetTime(${timerCount}, -1)">-1s</button>
+                    </div>
+                </div>
+            `;
+
+            // Insert the timer into the DOM
+            document.getElementById('timers-container').insertAdjacentHTML('beforeend', timerHTML);
+
+            // Initialize the timer
+            initializeTimer(timerCount);
+        }
+
+        function initializeTimer(timerNumber) {
+            timers[timerNumber] = {
+                targetTime: null
+            };
+
+            if (!timers[timerNumber].targetTime) {
+                timers[timerNumber].targetTime = new Date();
+            }
+
+            updateDisplay(timerNumber);
+        }
+
+        function updateDisplay(timerNumber) {
+            const timer = timers[timerNumber];
+            const now = new Date();
+
+            // If the target is not set (displayed as --:--), display Timer as --:-- and skip further processing
+            if (!timer.targetTime || document.getElementById(`targetTime${timerNumber}`).textContent === '--:--') {
+                document.getElementById(`countdown${timerNumber}`).textContent = '--:--';
+                document.getElementById(`targetTime${timerNumber}`).textContent = '--:--';
+                return;
+            }
+
+            // Calculate remaining time in seconds
+            let remainingTime = Math.floor((timer.targetTime - now) / 1000);
+
+            // If the remaining time has reached zero or passed
+            if (remainingTime <= 0) {
+                // Reset both the Timer and Target to --:--
+                document.getElementById(`countdown${timerNumber}`).textContent = '--:--';
+                document.getElementById(`targetTime${timerNumber}`).textContent = '--:--';
+                timer.targetTime = null;
+            } else {
+                // Continue updating the countdown if there's time remaining
+                const remainingMinutes = Math.floor(remainingTime / 60);
+                const remainingSeconds = remainingTime % 60;
+
+                const displayMinutes = String(remainingMinutes).padStart(2, '0');
+                const displaySeconds = String(remainingSeconds).padStart(2, '0');
+                document.getElementById(`countdown${timerNumber}`).textContent = `${displayMinutes}:${displaySeconds}`;
+            }
+
+            // Calculate and display time difference from fastest target if valid
+            const timeDiff = calculateTimeDifference(timerNumber);
+            document.getElementById(`timeDiff${timerNumber}`).textContent = timeDiff ? `${timeDiff >= 0 ? '+' : ''}${timeDiff}s` : '';
+
+            checkFastestTimer();
+        }
+
+        function adjustTargetTime(timerNumber, secondChange) {
+            const timer = timers[timerNumber];
+
+            // If targetTime is not set, use the current time
+            if (!timer.targetTime || document.getElementById(`targetTime${timerNumber}`).textContent === '--:--') {
+                timer.targetTime = new Date();
+            }
+
+            // Adjust the target time by adding or subtracting the specified seconds
+            timer.targetTime.setSeconds(timer.targetTime.getSeconds() + secondChange);
+
+            // Display the target time
+            const targetHours = String(timer.targetTime.getHours()).padStart(2, '0');
+            const targetMinutes = String(timer.targetTime.getMinutes()).padStart(2, '0');
+            const targetSeconds = String(timer.targetTime.getSeconds()).padStart(2, '0');
+            document.getElementById(`targetTime${timerNumber}`).textContent = `${targetHours}:${targetMinutes}:${targetSeconds}`;
+
+            // Update the countdown display
+            updateDisplay(timerNumber);
+        }
+
+        function calculateTimeDifference(timerNumber) {
+            const timer = timers[timerNumber];
+            const fastestTimer = timers.fastest;
+
+            if (!timer.targetTime || !fastestTimer?.targetTime) {
+                return null;
+            }
+
+            // Calculate the time difference in seconds between this timer's target and the fastest target
+            const timeDiff = Math.floor((timer.targetTime - fastestTimer.targetTime) / 1000);
+            return timeDiff;
+        }
+
+        function checkFastestTimer() {
+            let fastest = null;
+            let fastestTimer = null;
+            let allTimersInactive = true;
+
+            // Find the next fastest timer that hasn't reached zero and check if all timers are inactive
+            for (const timerNumber in timers) {
+                const timer = timers[timerNumber];
+                const now = new Date();
+                // Check if the timer hasn't reached zero yet
+                if (timer.targetTime && timer.targetTime > now) {
+                    allTimersInactive = false; // At least one active timer exists
+                    if (!fastest || timer.targetTime < fastest) {
+                        fastest = timer.targetTime;
+                        fastestTimer = timerNumber;
+                    }
+                }
+            }
+
+            if (allTimersInactive) {
+                // If all timers are inactive, reset Fastest and Target to --:--
+                document.getElementById('fastest-timer').textContent = '--:--';
+                document.getElementById('fastest-target-time').textContent = '--:--';
+                delete timers.fastest;
+            } else if (fastestTimer !== null) {
+                // Update "Fastest" and "Target" with the new fastest timer
+                timers.fastest = timers[fastestTimer];
+                const now = new Date();
+                const remainingTime = Math.floor((timers[fastestTimer].targetTime - now) / 1000);
+
+                const remainingMinutes = Math.floor(remainingTime / 60);
+                const remainingSeconds = remainingTime % 60;
+                const displayMinutes = String(remainingMinutes).padStart(2, '0');
+                const displaySeconds = String(remainingSeconds).padStart(2, '0');
+                document.getElementById('fastest-timer').textContent = `${displayMinutes}:${displaySeconds}`;
+
+                const targetHours = String(timers[fastestTimer].targetTime.getHours()).padStart(2, '0');
+                const targetMinutes = String(timers[fastestTimer].targetTime.getMinutes()).padStart(2, '0');
+                const targetSeconds = String(timers[fastestTimer].targetTime.getSeconds()).padStart(2, '0');
+                document.getElementById('fastest-target-time').textContent = `${targetHours}:${targetMinutes}:${targetSeconds}`;
+            }
+        }
+
+        function deleteTimer(timerId) {
+            // Remove the timer element from the DOM
+            document.getElementById(timerId).remove();
+
+            // Optionally, you can remove the timer data from the timers object
+            const timerNumber = timerId.replace('timer', '');
+            delete timers[timerNumber];
+
+            // After deleting, check if we need to update the fastest timer
+            checkFastestTimer();
+        }
+
+        // Initial state: add one timer
+        addTimer();
+
+        // Update every second
+        setInterval(function () {
+                for (const timerNumber in timers) {
+                    const timer = timers[timerNumber];
+                    if (timer.targetTime) {
+                        updateDisplay(timerNumber);
+                    }
+                }
+            }, 1000);
+    </script>
+</body>
+</html>
