@@ -108,28 +108,29 @@
             initializeTimer(timerCount);
         }
 
+        function getNowDate() {
+            const now = new Date();
+            now.setMilliseconds(0); // Truncate milliseconds
+            return now;
+        }
+
         function initializeTimer(timerNumber) {
             timers[timerNumber] = {
-                targetTime: null
+                targetTime: getNowDate()
             };
-
-            if (!timers[timerNumber].targetTime) {
-                timers[timerNumber].targetTime = new Date();
-            }
-
             updateDisplay(timerNumber);
         }
 
         function updateDisplay(timerNumber) {
             const timer = timers[timerNumber];
-            const now = new Date();
+            const now = getNowDate();
 
             if (!timer.targetTime) {
                 return;
             }
 
             // Calculate remaining time in seconds
-            let remainingTime = Math.floor((timer.targetTime - now) / 1000);
+            let remainingTime = (timer.targetTime - now) / 1000;
 
             // If the remaining time has reached zero or passed
             if (remainingTime <= 0) {
@@ -164,7 +165,7 @@
 
             // If targetTime is not set, use the current time
             if (!timer.targetTime) {
-                timer.targetTime = new Date();
+                timer.targetTime = getNowDate();
             }
 
             // Adjust the target time by adding or subtracting the specified seconds
@@ -187,9 +188,7 @@
                 return null;
             }
 
-            // Calculate the time difference in seconds between this timer's target and the fastest target
-            const timeDiff = Math.floor((timer.targetTime - fastestTimer.targetTime) / 1000);
-            return timeDiff;
+            return (timer.targetTime - fastestTimer.targetTime) / 1000;
         }
 
         function calculateQuarterTime(timerNumber) {
@@ -214,7 +213,7 @@
             let fastest = null;
             let fastestTimerNum = null;
             let allTimersInactive = true;
-            const now = new Date();
+            const now = getNowDate();
 
             // Find the next fastest timer that hasn't reached zero and check if all timers are inactive
             for (const timerNumber in timers) {
@@ -237,8 +236,7 @@
             } else if (fastestTimerNum !== null) {
                 // Update "Fastest" and "Target" with the new fastest timer
                 fastestTimer = timers[fastestTimerNum];
-                const now = new Date();
-                const remainingTime = Math.floor((fastestTimer.targetTime - now) / 1000);
+                const remainingTime = (fastestTimer.targetTime - now) / 1000;
 
                 const remainingMinutes = Math.floor(remainingTime / 60);
                 const remainingSeconds = remainingTime % 60;
